@@ -1,2 +1,2 @@
-# cardinalWave
+# CardinalWave
 Main Repository
