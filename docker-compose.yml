@@ -114,9 +114,9 @@ services:
 networks:
   cardinalCloud:
     driver: bridge
-  #  ipam:
-  #   config:
-  #     - subnet: 172.28.1.0/24
+    ipam:
+      config:
+        - subnet: 172.28.1.0/24
 
 volumes:
   cw_central_db_data:
