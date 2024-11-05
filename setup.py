@@ -15,7 +15,7 @@ REPOSITORIES = [
     {'url': 'git@github.com:CardinalWave/cw-central-service.git', 'branch': 'master'},
     {'url': 'git@github.com:CardinalWave/cw-mqtt-gateway.git', 'branch': 'server'},
     {'url': 'git@github.com:CardinalWave/cw-auth-service.git', 'branch': 'master'},
-    {'url': 'git@github.com:CardinalWave/python-image-base.git', 'branch': 'main'},
+    {'url': 'git@github.com:CardinalWave/python-base-image.git', 'branch': 'main'},
  ]
 
 DEST_DIR = 'cardinal_wave'
