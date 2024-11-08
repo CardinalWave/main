@@ -50,23 +50,56 @@ Já a comunicação entre o cw-mqtt-gateway e os microsserviços do back-end é 
 Definimos dois principais tipos de requisições gerais da aplicação afim de aproveitar a extensibilidade presente no protocolo MQTT e a utilização de REST por sua preseça na maioria dos frameworks Python.
 Temos então, ações simples, aqueles que mantem o processamento da requisição apenas entre os serviços descritos na imagem.
 
-Optamos por usar MQTT e REST no nosso sistema devido às vantagens que cada um desses protocolos oferece em diferentes contextos de comunicação. Cada um tem características que o tornam adequado para determinadas situações, permitindo um equilíbrio ideal entre eficiência e flexibilidade. A seguir vamos explorar as vantagens de cada um desse protocolos e como eles são aplicados em nosso contexto:
+<p align="center">
+    <img width="70%" src="acao_simples.png" />
+</p>
+ - Ação Simples
+
+#### Ação Simples
+Nesta exemplificação do sistema temos a representação das ações consideradas simples, em que as requisições do usuario interagem apenas com os microserviços descritos, o todo o processamento ocorre em grande parte em **CW-CENTRAL-SERVICE**, e os componentes em que está conectado. Estes eventos são relacionados a interações individuais do úsuario sendo neste caso:
+    
+    - Login: Quando o úsario entra em sua conta.
+    - Registrar: O úsuario cria sua conta.
+    - Criar grupo: Requisição para a criação de um novo grupo
+    - Entrar no Grupo: Requisição para a entrada em um grupo ja criado 
+    - Entrar no Chat: Requisção para a entrada em um chat de grupo
+    - Erros de requisição
+
+Desta forma simplificamos o processo das requisições em apenas um conjunto do sistema reduzindo possiveis acolamentos, nestas ações o retorno da requisição é feita atraves do **CW-MQTT-GATEWAY**, com a realização de tratamentos para a publicação da resposta processada pelos demais serviçõs do conjunto.
+
+Vale resaltar que o serviçõ criado para coleta de logs tambem interage com os demais serviços que serão apresentados.
+
+<p align="center">
+    <img width="70%" src="acao_complexa.png" />
+</p>
+ - Ação Complexa
+ 
+#### Ação Complexa
+Neste conjunto temos um simplificação do sistema em que podemos visualizar os componentes principais das ações consideradas complexas, aquelas em que o processamento da informação e divido em 2 ou mais serviçõs, **CW-CENTRAL-SERVICE** e **CW-MESSAGE-SERVICE**, em que cada um exerce um papel durante o processamento da requisição, sendo **CW-CENTRAL-SERVICE** utilizado para a validação de dados do úsuario e demais informações da requisição, dessa forma garantimos uma menor complexidade no envio das mensagens, sendo **CW-MESSAGE-SERVICE**, apenas utilizado para identificar os membros conectados a um chat em especifico para o recebimento e tratamento de mensagens e para a publicação das mesmas atraves da conexão ao broker.
+
+Optamos por usar MQTT e HTTP no nosso sistema devido às vantagens que cada um desses protocolos oferece em diferentes contextos de comunicação. Cada um tem características que o tornam adequado para determinadas situações, permitindo um equilíbrio ideal entre eficiência e flexibilidade. A seguir vamos explorar as vantagens de cada um desse protocolos e como eles são aplicados em nosso contexto:
 
 ### MQTT: Eficiência e Escalabilidade para IOT
 O MQTT (Message Queuing Telemetry Transport) é um protocolo de comunicação baseado no modelo publish/subscribe (publicar/assinar), o que o torna altamente eficiente em ambientes com múltiplas conexões simultaneas e idenpendetes. Utilizamos este protocolo em nosso projeto por conta de sua operação ser realizada mesmo em ambientes instaveis ou de baixa largura de banda, atendo de forma eficiente as demandas de conexões entre os microcontroladores e as aplicações da rede.
  - Protocolo leve que utiliza pacotes pequenos para trafegar informações entre a inscricao e a assinatura.
  - Facilidade na integração com plataformas diferentes.
 
+### REST: Simplicidade e Flexibilidade para Integração
+O REST (Representational State Transfer) é um estilo de arquitetura amplamente utilizado para a construção de APIs e serviços distribuidos, sendo baseado em operaçãoes simples de requisição HTTP (GET, POST, PUT, DELETE) e no conceito da identificação de recursos por URLs disponibilizadas pelo serviço. Sendo uma vantagem quando a necessidade da simplificação de iterações entre os serviços. 
+
+    - Simplicidade nas chamadas.
+    - Ubidquidade na nomeação das URLs de acesso, promovendo uma linguagem familiar no consumo de recursos das APIs.
+
+
+Optamos por usar REST e MQTT no sistema devido às suas vantagens distintas em termos de simplicidade, flexibilidade e eficiência em diferentes cenários de comunicação. Embora ambos sejam protocolos amplamente utilizados, eles atendem a necessidades específicas e têm características que os tornam ideais para contextos diferentes.
+O REST sendo utilizado neste caso para a simplificação da integração aos serviços que não necessitam de esposição ao contexo direto do úsuario, facilitando o desacoplamento e a construção de modulos idenpendetes. Para os casos em que a coneão externa é necessario como no caso de rotornos ao cliente, o protocolo MQTT compre está função, se responsabilizando pela publicação e distribuição dos eventos.
+
+
+
+
+
 ------------------
 
-Optamos por usar gRPC no backend porque ele possui um desempenho melhor do que REST. Especificamente, gRPC é baseado no conceito de **Chamada Remota de Procedimentos (RPC)**. A ideia é simples: em aplicações distribuídas que usam gRPC, um cliente pode chamar funções implementadas em outros processos de forma transparente, isto é, como se tais funções fossem locais. Em outras palavras, chamadas gRPC tem a mesma sintaxe de chamadas normais de função.
-
-Para viabilizar essa transparência, gRPC usa dois conceitos centrais:
-
--   uma linguagem para definição de interfaces
--   um protocolo para troca de mensagens entre aplicações clientes e servidoras.
-
-Especificamente, no caso de gRPC, a implementação desses dois conceitos ganhou o nome de **Protocol Buffer**. Ou seja, podemos dizer que:
 
 > Protocol Buffer = linguagem para definição de interfaces + protocolo para definição das mensagens trocadas entre aplicações clientes e servidoras
 
