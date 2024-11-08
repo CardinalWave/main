@@ -1,0 +1,126 @@
+services:
+
+  mqtt-mosquitto:
+    container_name: mqtt-mosquitto
+    image: eclipse-mosquitto:latest
+    networks:
+      - cardinalCloud
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mqtt-mosquitto/mqtt.conf:/mosquitto/config/mosquitto.conf
+
+  cw_central_db:
+    image: postgres:15
+    container_name: cw_central_db
+    networks:
+      - cardinalCloud
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: cw_central_db
+    volumes:
+      - cw_central_db_data:/var/lib/postgresql/data
+      - ./cw_central_db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    ports:
+      - "5432:5432"
+
+  cw_message_db:
+    image: postgres:15
+    container_name: cw_message_db
+    networks:
+      - cardinalCloud
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: cw_message_db
+    volumes:
+      - cw_message_db_data:/var/lib/postgresql/data
+      - ./cw_message_db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    ports:
+      - "5431:5431"
+
+  python-base-image:
+    container_name: python-base-image
+    build:
+      context: ./python-base-image
+
+  cw-log-trace:
+    container_name: cw-log-trace
+    build:
+      context: ./cw-log-trace
+    volumes:
+      - ./cw-log-trace/log_service.txt:/app/log_service.txt
+    networks:
+      - cardinalCloud
+    ports:
+      - "5050:5050"
+
+  cw-central-service:
+    container_name: cw-central-service
+    build:
+      context: ./cw-central-service
+    networks:
+      - cardinalCloud
+    ports:
+      - "5001:5001"
+    depends_on:
+      - cw-log-trace
+      - cw_central_db
+      - cw-bff-service
+      - python-base-image
+
+  cw-bff-service:
+    container_name: cw-bff-service
+    build:
+      context: ./cw-bff-service
+    networks:
+      - cardinalCloud
+    ports:
+      - "5004:5004"
+    depends_on:
+      - cw-log-trace
+      - mqtt-mosquitto
+      - python-base-image
+
+  cw-message-service:
+    container_name: cw-message-service
+    build:
+      context: ./cw-message-service
+    networks:
+      - cardinalCloud
+    ports:
+      - "5003:5003"
+    depends_on:
+      - cw-log-trace
+      - mqtt-mosquitto
+      - cw-mqtt-gateway
+      - cw-bff-service
+      - python-base-image
+
+  cw-mqtt-gateway:
+    container_name: cw-mqtt-gateway
+    build:
+      context: ./cw-mqtt-gateway
+    networks:
+      - cardinalCloud
+    ports:
+      - "5000:5000"
+    depends_on:
+      - cw-bff-service
+      - cw-central-service
+      - cw-log-trace
+      - mqtt-mosquitto
+      - python-base-image
+
+networks:
+  cardinalCloud:
+    driver: bridge
+  #  ipam:
+  #   config:
+  #     - subnet: 172.28.1.0/24
+
+volumes:
+  cw_central_db_data:
+  cw_message_db_data:
+  db_data:
