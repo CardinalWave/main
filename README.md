@@ -95,8 +95,6 @@ Optamos por usar REST e MQTT no sistema devido às suas vantagens distintas em t
 O REST sendo utilizado neste caso para a simplificação da integração aos serviços que não necessitam de esposição ao contexo direto do úsuario, facilitando o desacoplamento e a construção de modulos idenpendetes. Para os casos em que a coneão externa é necessario como no caso de rotornos ao cliente, o protocolo MQTT compre está função, se responsabilizando pela publicação e distribuição dos eventos.
 
 
-
-
 ### Exemplo do funcionamento das conexões
 
 Quando trabalhamos com MQTT, cada publicação possui um tópico que define a assinatura das operações que ele realiza para os outros microsserviços inscritos no broker.
@@ -104,22 +102,111 @@ Nesta publicação definimos parametros que serão utilizados pelos demais servi
 O exemplo a seguir uma execução de evento de login do nosso microsserviço **CW-BFF-SERVICE** ou de um de nossos microcontroladores conectados. Nele, definimos que esse microsserviço realiza uma requisição `login`. Para chamar essa função devemos passar como parâmetro de entrada um objeto contendo os dados de acesso do usuario (`payload`). Após sua execução, a função retorna como resultado uma outra publicação com o topico (`server`), seguido pela (`session_id`) do usuario e o (`evento`), com payload o token gerado para essa sessão.
 
 <p align="center">
-    <img width="70%" src="https://user-images.githubusercontent.com/7620947/108770189-c776c480-7538-11eb-850a-f8a23f562fa5.png" />
+    <img width="70%" src="exemplo_publish_mqttExplorer_edit.png" />
 </p>
+-- Publicação de login do lado do cliente
+
+<p align="center">
+    <img width="70%" src="exemplo_publish_mqttExplorer_server.png" />
+</p>
+-- Publicacao de login do lado do servidor
 
 Em MQTT, as publicações são formadas por um conjunto de parametros denominados topico (`topic`), que definimos com parametros como a identificação dos dispositivos, sessão da chamada e ação executada, dessa forma conseguimos criar uma estrutura flexivel e compativel com os requisitos dos multiplos sistemas da rede. O tramento destas requisições ocorre em **CW-MQTT-SERVICE**, como no seguinte exemplo:
 
--- mqtt_py.png
+<p align="center">
+    <img width="70%" src="mqtt_py.png" />
+</p>
 
 Podemos observer que atraves do metodo (`on_message`), executado sempre que recebe uma nova mensagem, realizamos a chamada para o (`TopicManager`), onde realizamos a deserialização da publicação recebida e envimos e excutamos os processos necessarios para o processamento do evento.
 
--- topic_manager.png
+<p align="center">
+    <img width="100%" src="topic_manager.png" />
+</p>
+-- TopicManager
 
 Desse forma centralizamos a idenficação dos eventos e possiveis erros.
 As requisições para **CW-CENTRAL-SERVICE** seguem o mesmo processo em todos os eventos, de forma simplificada, a adição de um novo evento depende apenas da alteração em (`TopicManager`) e seu tratamento especifico, embora sua requisição permaça igual aos demais.
 
+<p align="center">
+    <img width="100%" src="integracao_central.png" />
+</p>
 -- integracao_central.png
 
+
+Apos a requisição, o **CW-CENTRAL-SERVICE** incia o processamento da ação realizada, neste caso se trata da primeira conexão do cliente á aplicação, sendo necessario a geração de um token que sera retornado e utilizado pelo cliente nos demais eventos executados. Esse token tem um prazo definido e seu criação e resposabilidade do **Keycloak**, tornando a idenficação do cliente mais segura dentro do sistema.
+
+<p align="center">
+    <img width="100%" src="user_route.png" />
+</p>
+-- user_route.png
+
+Para uma melhor visualização dos processos que ocorrem durante o tratamento de um evento, utilizamos o padrão **Composer**, utilizado em todas as ações deste serviços e presente em grande parte das aplicações do conjunto.
+
+<p align="center">
+    <img width="100%" src="user_login_composer.png" />
+</p>
+-- user_login_composer.png
+
+A requisição para **CW-AUTH-SERVICE**, executada principalmente nas ações de (`login`) e (`register`), acontece de forma semelhante ao procedimento realizado para a chamadas para **CW-CENTRAL-SERVICE** presente em **CW-MQTT-GATEWAY**:
+
+<p align="center">
+    <img width="100%" src="auth_request.png" />
+</p>
+-- auth_request.png
+
+Esses são os procedimentos basicos utilizados nas requisições simples, em que a resposta ao usuario conta apenas com a utilização principal do **CW-CENTRAL-SERVICE**, sendo entregue o retorno atraves das funções executadas em sequencia entre os serviços.
+
+Nas ocasioes em que o evento utiliza ações complexas, o procedimento deve prosseguir atraves da execução de **CW-MESSAGE-SERVICE**, como no seguinte exemplo em que um cliente conectado realiza a operação de envio de mensagem, os processos descritos anteriormente são mantidos tendo como difereça principal a utilização deste serviço para a publicação da mensagem.
+
+<p align="center">
+    <img width="100%" src="forward_message.png" />
+</p>
+-- forward_message.py
+
+Quando um requisição é recebida por **CW-MESSAGE-SERVICE** ela pode executar as tres seguintes ações:
+
+    - /chat/join - Usuario entra no chat de um grupo em que esta cadastrado
+    - /chat/leave - Saida de um usuario do chat de um grupo
+    - /chat/send - Envio de mensagem
+
+<p align="center">
+    <img width="100%" src="actions_routes.png" />
+</p>
+-- actions_routes.py
+
+As ações de (`join`) e (`leave`), possuem um funcionamento inverso, uma vez que um usuario envia uma ação de entrada em um chat, o evento é processado atraves do metodo (`join_composer`).
+
+<p align="center">
+    <img width="100%" src="join_composer.png" />
+</p>
+-- join_composer.py
+
+Em que realiza a execuação dos metodos de iniciação do tratamento da ação enque os dados da requisção são submetidos ao bando de dados **CW_MESSAGE_DB**, na tabela **Sessions** afim de cadastrar o chat em que o usuario necessita receber as mensagens presentes na tabela **Messages**, e novas publicações. Quando a ação (`leave`) ocorre, o processo inverso é realizado, deletando os dados da tabela responsavel pela assoaciação da entrada do usuario ao chat.
+
+<p align="center">
+    <img width="100%" src="join_leave.png" />
+</p>
+-- join_leave.png
+
+Para o controle das mensagens enviadas pelos usuarios contamos com uma tabela de armazenamento de mensagens presente em **CW_MESSAGE_DB**, possibilitando o arquivamento destas informações para posterior utilização, o controle destes eventos é realizado principalmente em  (`MessageManager`), em que contamos com métodos utilizados tanto para o envio de novas mensagens como (`forward_message`), para o envio de mensagens ao usuario com a sua entrada no chat (`inbox`) e para a gravação no banco de dados (`save_message`)
+
+<p align="center">
+    <img width="100%" src="MessageManager.png" />
+</p>
+-- MessageManager.png
+
+Dessa forma, quando o usuario entra no chat, temos além do evento de entrada e a possibilidade de enviar mensagens a outros usuarios, a realização do envio das mensagens presentes no grupo anteriormente.
+
+A publicação destas mensagens no broker ocorre atraves do metodo (`message_publish`), tendo como diferenciação a utilização em lote no caso de `inbox` e o envio individual em `forward_message`
+
+<p align="center">
+    <img width="100%" src="MessagePublish.png" />
+</p>
+-- message_publish.png
+
+
+-----------------------------------------------------------
+Um grande ponto de ateção em nosso sistema está em nosso serviço **CW-BFF-SERVICE** e nas possiveis conexões de dispositivos **ESP-8266** encontrados em nossa rede. A forma de construção utilizada para o frontend de nosso sistema e a realizações de o
 
 
 ## Executando o Sistema
