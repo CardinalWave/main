@@ -58,7 +58,7 @@ Temos então, ações simples, aqueles que mantem o processamento da requisiçã
 #### Ação Simples
 Nesta exemplificação do sistema temos a representação das ações consideradas simples, em que as requisições do usuario interagem apenas com os microserviços descritos, o todo o processamento ocorre em grande parte em **CW-CENTRAL-SERVICE**, e os componentes em que está conectado. Estes eventos são relacionados a interações individuais do úsuario sendo neste caso:
     
-    - Login: Quando o úsario entra em sua conta.
+    - Login: Quando o usuario entra em sua conta.
     - Registrar: O úsuario cria sua conta.
     - Criar grupo: Requisição para a criação de um novo grupo
     - Entrar no Grupo: Requisição para a entrada em um grupo ja criado 
@@ -97,28 +97,30 @@ O REST sendo utilizado neste caso para a simplificação da integração aos ser
 
 
 
+### Exemplo do funcionamento das conexões
 
-------------------
-
-
-> Protocol Buffer = linguagem para definição de interfaces + protocolo para definição das mensagens trocadas entre aplicações clientes e servidoras
-
-### Exemplo de Arquivo .proto
-
-Quando trabalhamos com gRPC, cada microserviço possui um arquivo `.proto` que define a assinatura das operações que ele disponibiliza para os outros microsserviços.
-Neste mesmo arquivo, declaramos também os tipos dos parâmetros de entrada e saída dessas operações.
-
-O exemplo a seguir mostra o arquivo [.proto](https://github.com/aserg-ufmg/micro-livraria/blob/main/proto/shipping.proto) do nosso microsserviço de frete. Nele, definimos que esse microsserviço disponibiliza uma função `GetShippingRate`. Para chamar essa função devemos passar como parâmetro de entrada um objeto contendo o CEP (`ShippingPayLoad`). Após sua execução, a função retorna como resultado um outro objeto (`ShippingResponse`) com o valor do frete.
+Quando trabalhamos com MQTT, cada publicação possui um tópico que define a assinatura das operações que ele realiza para os outros microsserviços inscritos no broker.
+Nesta publicação definimos parametros que serão utilizados pelos demais serviços durante o processamento e qual o evento acionado e a identificação do usuario e dispositivo de acesso utilizado.
+O exemplo a seguir uma execução de evento de login do nosso microsserviço **CW-BFF-SERVICE** ou de um de nossos microcontroladores conectados. Nele, definimos que esse microsserviço realiza uma requisição `login`. Para chamar essa função devemos passar como parâmetro de entrada um objeto contendo os dados de acesso do usuario (`payload`). Após sua execução, a função retorna como resultado uma outra publicação com o topico (`server`), seguido pela (`session_id`) do usuario e o (`evento`), com payload o token gerado para essa sessão.
 
 <p align="center">
     <img width="70%" src="https://user-images.githubusercontent.com/7620947/108770189-c776c480-7538-11eb-850a-f8a23f562fa5.png" />
 </p>
 
-Em gRPC, as mensagens (exemplo: `Shippingload`) são formadas por um conjunto de campos, tal como em um `struct` da linguagem C, por exemplo. Todo campo possui um nome (exemplo: `cep`) e um tipo (exemplo: `string`). Além disso, todo campo tem um número inteiro que funciona como um identificador único para o mesmo na mensagem (exemplo: ` = 1`). Esse número é usado pela implementação de gRPC para identificar o campo no formato binário de dados usado por gRPC para comunicação distribuída.
+Em MQTT, as publicações são formadas por um conjunto de parametros denominados topico (`topic`), que definimos com parametros como a identificação dos dispositivos, sessão da chamada e ação executada, dessa forma conseguimos criar uma estrutura flexivel e compativel com os requisitos dos multiplos sistemas da rede. O tramento destas requisições ocorre em **CW-MQTT-SERVICE**, como no seguinte exemplo:
 
-Arquivos .proto são usados para gerar **stubs**, que nada mais são do que proxies que encapsulam os detalhes de comunicação em rede, incluindo troca de mensagens, protocolos, etc. Mais detalhes sobre o padrão de projeto Proxy podem ser obtidos no [Capítulo 6](https://engsoftmoderna.info/cap6.html). 
+-- mqtt_py.png
 
-Em linguagens estáticas, normalmente precisa-se chamar um compilador para gerar o código de tais stubs. No caso de JavaScript, no entanto, esse passo não é necessário, pois os stubs são gerados de forma transparente, em tempo de execução.
+Podemos observer que atraves do metodo (`on_message`), executado sempre que recebe uma nova mensagem, realizamos a chamada para o (`TopicManager`), onde realizamos a deserialização da publicação recebida e envimos e excutamos os processos necessarios para o processamento do evento.
+
+-- topic_manager.png
+
+Desse forma centralizamos a idenficação dos eventos e possiveis erros.
+As requisições para **CW-CENTRAL-SERVICE** seguem o mesmo processo em todos os eventos, de forma simplificada, a adição de um novo evento depende apenas da alteração em (`TopicManager`) e seu tratamento especifico, embora sua requisição permaça igual aos demais.
+
+-- integracao_central.png
+
+
 
 ## Executando o Sistema
 
