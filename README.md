@@ -205,8 +205,53 @@ A publicação destas mensagens no broker ocorre atraves do metodo (`message_pub
 -- message_publish.png
 
 
+Agora que explicamos como o processamento das informações ocorre, vamos voltar ao ponto inicial, o que ocorre antes da mensagem chegar ao **Broker**. Um grande ponto de ateção em nosso sistema está em nosso serviço **CW-BFF-SERVICE** e nas possiveis conexões de dispositivos **ESP-8266** encontrados em nossa rede. A forma de construção utilizada para o frontend de nosso sistema e as requisições são feitas utilizando uma conexão **WebSocket** estabelecida entre a página web e o servidor da aplicação, podendo ser uma conexão direta ao servidor local (`CW-BFF-SERVICE`) ou atraves do (`ESP-8266`), ambos os métodos realizam a transformação dos payloads vindos da conexão WebSocket criada no  (`index.html`) 
+-- index_socket.png
+
+Esse o `index.html` é enviado para o usuario quando ele realiza requisições para `http://cardinalwave.net`, disponibiniblizado em nossa rede. Neste arquivo utilizamos a tecnica de HTML embutido, onde no mesmo arquivo temos todo o código utilizado para realizar as operações do frontend. Sendo projetado para ser simples e eficiente, permitindo o controle dinâmico da interface. Uma das principais caracteristicas dessa implementação é o uso de um sistema de status para gerenciamento dos modulos a serem exibidos ao usuario. A variavel status e associada as informações do  `localStorage` modulo presente no navegador para o armazenamento de informações pesistentes.
+-- index_status.png
+
+Quando já logado no sistema, neste caso, já obteve o token gerado por **CW-AUTH-SERVICE**, e armazenado no `localStorage`, ele realiza a chamada por `handleSection`, em que controla as chamadas pelo modulos `chat_list` - Lista de chats/grupos e `chat_join` - a entrada do usuario no chat.
+-- index_handleSection.png
+
+Ao entrar em um chat o usuario a requisição do úsuario realiza a série de procedimentos e chamadas anteriormente analizadas, tem como resultado a inscricao da seção do úsuario no broker afim de receber as mensagens de um chat de grupo em questão. O recebimento destas mensagens assim como o retorno das chamadas realizadas ocorre de forma semelhante, com a execução dos eventos pelo cliente e a sinalização das seções a serem construidas no frontend, sinalizamos ao script quais devem ser os retornos esperados em cada ocasião, como podemos ver em  `socket.onmessage`, uma função de callback, um método disponibilizado pela instância do WebSocket, uma API nativa do JavaScript.
+-- index_socket_message.png
+
+Em que agrupamos todas ações que são realizadas pelo o úsuario e necessitam de resposta, com este modo de excecução simplificamos a construção do sistema, embora prejudique a leitura de novos desenvolvedores. A utilização da técnica de HTML embutido em nosso projeto se deve a necessidade de menos sobrecarga na rede e por conta da bibliotecas utilizadas nem nosso microcontroladores que por serem hardwares com foco em baixo consumo, necessitam de menor complexidade para a criação das páginas web.
+
+O tratamento desse payloads quando estamos em uma conexão direta ao servidor, seja na rede principal ou extendida pelo microcontrolador **ESP-32S WROOM**, realiza o envio dos payloads **WebSocket** para o serviço **CW-BFF-SERVICE**, onde ele realiza a criação e gerenciamento da conexão estabelecida e a associa, atraves de id de idenficação unicos, ao id da sessão do usuario.
+
+--- websocket_server.png
+
+Com essa imagem podemos analizar a utilização de decoradores, disponibilizados atraves da biblioteca **Flaks-Websocket**, onde construimos funções de callback para o tratamento dos eventos vindos da conexão **WebSocket**, em que realizamos o gerenciamento das conexões.
+
+O metodo `handleSection`, acionado quando novas mensagens são enviadas pelo cliente, tem a função de sinalizar o recebimento de um novo pacote para `SessionCompose`, onde centralizamos os envios e recebimentos de ambos os tipos de conexões em que este serviço esta atrelado, **MQTT** e **WebSocket**
+
+--- session_composer.png
+
+Aqui temos um exemplo da utilização do padrão **Strategy**, um dos padrões de projeto comportamentais, aplicado de acordo com as necessidades deste projeto. Strategy permite que você defina uma familia de processos, encapsulados que serão aplicados de acordo com o comportamento necessario para a ocasiao, neste caso sendo chamados por `mqtt`, quando a mensagem foi recebida por meio da inscrição no broker, ou `websocket`, em que a mensagem veio atraves da conexão WebSocket.
+
+--bff_session_composer.png
+
+Quando o ponto de partida da conexão do cliente ocorre no microcontrolador **ESP8266**, o tratamento das requisições e conexões ocorre de maneira diferente por conta das capacidades e objetivos estabelecidos para a utilização deste dispositivo como, por conta de seu baixo poder de processamento comparado a complexidade da aplicação, em que neste caso ele deve alem de manter o maximo possivel de usuarios conectados, ele deve estabelecer anteroirmente uma conexão com a rede do servidor seja, atraves do acesso criado pelo microcontrolador **ESP-32S WROOM**, ou pelo rede central. Essa carga de processamento se torna complexa de lidar nesta situação, por conta disso realizamos parte das operções exercidas em **CW-BFF-SERVICE**, neste dispositivo de forma manual. 
+
+-- esp8266_conn.png
+
+Em nosso microcontrolador **ESP8266**, temos a utilização da estrutura de **main loop**, em que possuimos um método de inicialização (`setup`) e uma função excecutada em de forma constate (`loop`). Em `setup` temos o conjunto de funções utilziadas para a configuração inicial do dispositivo, como a configuração da rede e conexão, e servidores de DNS para processamento das requisições, WebSocket para a conexão da página, Web componente essencial para a operação da aplicação web.
+
+-- esp8266_setup.png
+
+No método `loop` encontramos os metodos utilizados para fazer o controle das requisições, isso é, receber os payloads WebSocket, parsear e identificar as informações necessarias pra compor e realizar a publicação do evento no broker do servidor em que está conectado, sendo grande parte da dificuldade do projeto, por conta da falta de informações disponiveis durante do desenvolvimento do sistema embarcaco, uma caracteristica comum desse tipo de sistema.
+
+-- esp8266_loop.png
+
+As funções de `loop`, são utilzidas além do controle das requisições, mas também para o gerenciamento dos sockets e conexões presentes, atraves de um estrutura desenvolvida pra relacionando o objeto WebSocket com o id da sessão.
+
+-- esp8266_estrutura.png
+
+
+-- Miro
 -----------------------------------------------------------
-Um grande ponto de ateção em nosso sistema está em nosso serviço **CW-BFF-SERVICE** e nas possiveis conexões de dispositivos **ESP-8266** encontrados em nossa rede. A forma de construção utilizada para o frontend de nosso sistema e a realizações de o
 
 
 ## Executando o Sistema
