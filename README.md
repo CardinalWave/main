@@ -50,42 +50,77 @@ Já a comunicação entre o cw-mqtt-gateway e os microsserviços do back-end é 
 Definimos dois principais tipos de requisições gerais da aplicação afim de aproveitar a extensibilidade presente no protocolo MQTT e a utilização de REST por sua preseça na maioria dos frameworks Python.
 Temos então, ações simples, aqueles que mantem o processamento da requisição apenas entre os serviços descritos na imagem.
 
-Optamos por usar MQTT e REST no nosso sistema devido às vantagens que cada um desses protocolos oferece em diferentes contextos de comunicação. Cada um tem características que o tornam adequado para determinadas situações, permitindo um equilíbrio ideal entre eficiência e flexibilidade. A seguir vamos explorar as vantagens de cada um desse protocolos e como eles são aplicados em nosso contexto:
+<p align="center">
+    <img width="70%" src="acao_simples.png" />
+</p>
+ - Ação Simples
+
+#### Ação Simples
+Nesta exemplificação do sistema temos a representação das ações consideradas simples, em que as requisições do usuario interagem apenas com os microserviços descritos, o todo o processamento ocorre em grande parte em **CW-CENTRAL-SERVICE**, e os componentes em que está conectado. Estes eventos são relacionados a interações individuais do úsuario sendo neste caso:
+    
+    - Login: Quando o usuario entra em sua conta.
+    - Registrar: O úsuario cria sua conta.
+    - Criar grupo: Requisição para a criação de um novo grupo
+    - Entrar no Grupo: Requisição para a entrada em um grupo ja criado 
+    - Entrar no Chat: Requisção para a entrada em um chat de grupo
+    - Erros de requisição
+
+Desta forma simplificamos o processo das requisições em apenas um conjunto do sistema reduzindo possiveis acolamentos, nestas ações o retorno da requisição é feita atraves do **CW-MQTT-GATEWAY**, com a realização de tratamentos para a publicação da resposta processada pelos demais serviçõs do conjunto.
+
+Vale resaltar que o serviçõ criado para coleta de logs tambem interage com os demais serviços que serão apresentados.
+
+<p align="center">
+    <img width="70%" src="acao_complexa.png" />
+</p>
+ - Ação Complexa
+ 
+#### Ação Complexa
+Neste conjunto temos um simplificação do sistema em que podemos visualizar os componentes principais das ações consideradas complexas, aquelas em que o processamento da informação e divido em 2 ou mais serviçõs, **CW-CENTRAL-SERVICE** e **CW-MESSAGE-SERVICE**, em que cada um exerce um papel durante o processamento da requisição, sendo **CW-CENTRAL-SERVICE** utilizado para a validação de dados do úsuario e demais informações da requisição, dessa forma garantimos uma menor complexidade no envio das mensagens, sendo **CW-MESSAGE-SERVICE**, apenas utilizado para identificar os membros conectados a um chat em especifico para o recebimento e tratamento de mensagens e para a publicação das mesmas atraves da conexão ao broker.
+
+Optamos por usar MQTT e HTTP no nosso sistema devido às vantagens que cada um desses protocolos oferece em diferentes contextos de comunicação. Cada um tem características que o tornam adequado para determinadas situações, permitindo um equilíbrio ideal entre eficiência e flexibilidade. A seguir vamos explorar as vantagens de cada um desse protocolos e como eles são aplicados em nosso contexto:
 
 ### MQTT: Eficiência e Escalabilidade para IOT
 O MQTT (Message Queuing Telemetry Transport) é um protocolo de comunicação baseado no modelo publish/subscribe (publicar/assinar), o que o torna altamente eficiente em ambientes com múltiplas conexões simultaneas e idenpendetes. Utilizamos este protocolo em nosso projeto por conta de sua operação ser realizada mesmo em ambientes instaveis ou de baixa largura de banda, atendo de forma eficiente as demandas de conexões entre os microcontroladores e as aplicações da rede.
  - Protocolo leve que utiliza pacotes pequenos para trafegar informações entre a inscricao e a assinatura.
  - Facilidade na integração com plataformas diferentes.
 
-------------------
+### REST: Simplicidade e Flexibilidade para Integração
+O REST (Representational State Transfer) é um estilo de arquitetura amplamente utilizado para a construção de APIs e serviços distribuidos, sendo baseado em operaçãoes simples de requisição HTTP (GET, POST, PUT, DELETE) e no conceito da identificação de recursos por URLs disponibilizadas pelo serviço. Sendo uma vantagem quando a necessidade da simplificação de iterações entre os serviços. 
 
-Optamos por usar gRPC no backend porque ele possui um desempenho melhor do que REST. Especificamente, gRPC é baseado no conceito de **Chamada Remota de Procedimentos (RPC)**. A ideia é simples: em aplicações distribuídas que usam gRPC, um cliente pode chamar funções implementadas em outros processos de forma transparente, isto é, como se tais funções fossem locais. Em outras palavras, chamadas gRPC tem a mesma sintaxe de chamadas normais de função.
+    - Simplicidade nas chamadas.
+    - Ubidquidade na nomeação das URLs de acesso, promovendo uma linguagem familiar no consumo de recursos das APIs.
 
-Para viabilizar essa transparência, gRPC usa dois conceitos centrais:
 
--   uma linguagem para definição de interfaces
--   um protocolo para troca de mensagens entre aplicações clientes e servidoras.
+Optamos por usar REST e MQTT no sistema devido às suas vantagens distintas em termos de simplicidade, flexibilidade e eficiência em diferentes cenários de comunicação. Embora ambos sejam protocolos amplamente utilizados, eles atendem a necessidades específicas e têm características que os tornam ideais para contextos diferentes.
+O REST sendo utilizado neste caso para a simplificação da integração aos serviços que não necessitam de esposição ao contexo direto do úsuario, facilitando o desacoplamento e a construção de modulos idenpendetes. Para os casos em que a coneão externa é necessario como no caso de rotornos ao cliente, o protocolo MQTT compre está função, se responsabilizando pela publicação e distribuição dos eventos.
 
-Especificamente, no caso de gRPC, a implementação desses dois conceitos ganhou o nome de **Protocol Buffer**. Ou seja, podemos dizer que:
 
-> Protocol Buffer = linguagem para definição de interfaces + protocolo para definição das mensagens trocadas entre aplicações clientes e servidoras
 
-### Exemplo de Arquivo .proto
 
-Quando trabalhamos com gRPC, cada microserviço possui um arquivo `.proto` que define a assinatura das operações que ele disponibiliza para os outros microsserviços.
-Neste mesmo arquivo, declaramos também os tipos dos parâmetros de entrada e saída dessas operações.
+### Exemplo do funcionamento das conexões
 
-O exemplo a seguir mostra o arquivo [.proto](https://github.com/aserg-ufmg/micro-livraria/blob/main/proto/shipping.proto) do nosso microsserviço de frete. Nele, definimos que esse microsserviço disponibiliza uma função `GetShippingRate`. Para chamar essa função devemos passar como parâmetro de entrada um objeto contendo o CEP (`ShippingPayLoad`). Após sua execução, a função retorna como resultado um outro objeto (`ShippingResponse`) com o valor do frete.
+Quando trabalhamos com MQTT, cada publicação possui um tópico que define a assinatura das operações que ele realiza para os outros microsserviços inscritos no broker.
+Nesta publicação definimos parametros que serão utilizados pelos demais serviços durante o processamento e qual o evento acionado e a identificação do usuario e dispositivo de acesso utilizado.
+O exemplo a seguir uma execução de evento de login do nosso microsserviço **CW-BFF-SERVICE** ou de um de nossos microcontroladores conectados. Nele, definimos que esse microsserviço realiza uma requisição `login`. Para chamar essa função devemos passar como parâmetro de entrada um objeto contendo os dados de acesso do usuario (`payload`). Após sua execução, a função retorna como resultado uma outra publicação com o topico (`server`), seguido pela (`session_id`) do usuario e o (`evento`), com payload o token gerado para essa sessão.
 
 <p align="center">
     <img width="70%" src="https://user-images.githubusercontent.com/7620947/108770189-c776c480-7538-11eb-850a-f8a23f562fa5.png" />
 </p>
 
-Em gRPC, as mensagens (exemplo: `Shippingload`) são formadas por um conjunto de campos, tal como em um `struct` da linguagem C, por exemplo. Todo campo possui um nome (exemplo: `cep`) e um tipo (exemplo: `string`). Além disso, todo campo tem um número inteiro que funciona como um identificador único para o mesmo na mensagem (exemplo: ` = 1`). Esse número é usado pela implementação de gRPC para identificar o campo no formato binário de dados usado por gRPC para comunicação distribuída.
+Em MQTT, as publicações são formadas por um conjunto de parametros denominados topico (`topic`), que definimos com parametros como a identificação dos dispositivos, sessão da chamada e ação executada, dessa forma conseguimos criar uma estrutura flexivel e compativel com os requisitos dos multiplos sistemas da rede. O tramento destas requisições ocorre em **CW-MQTT-SERVICE**, como no seguinte exemplo:
 
-Arquivos .proto são usados para gerar **stubs**, que nada mais são do que proxies que encapsulam os detalhes de comunicação em rede, incluindo troca de mensagens, protocolos, etc. Mais detalhes sobre o padrão de projeto Proxy podem ser obtidos no [Capítulo 6](https://engsoftmoderna.info/cap6.html). 
+-- mqtt_py.png
 
-Em linguagens estáticas, normalmente precisa-se chamar um compilador para gerar o código de tais stubs. No caso de JavaScript, no entanto, esse passo não é necessário, pois os stubs são gerados de forma transparente, em tempo de execução.
+Podemos observer que atraves do metodo (`on_message`), executado sempre que recebe uma nova mensagem, realizamos a chamada para o (`TopicManager`), onde realizamos a deserialização da publicação recebida e envimos e excutamos os processos necessarios para o processamento do evento.
+
+-- topic_manager.png
+
+Desse forma centralizamos a idenficação dos eventos e possiveis erros.
+As requisições para **CW-CENTRAL-SERVICE** seguem o mesmo processo em todos os eventos, de forma simplificada, a adição de um novo evento depende apenas da alteração em (`TopicManager`) e seu tratamento especifico, embora sua requisição permaça igual aos demais.
+
+-- integracao_central.png
+
+
 
 ## Executando o Sistema
 
