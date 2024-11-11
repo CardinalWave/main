@@ -275,8 +275,21 @@ As funções de `loop`, são utilzidas além do controle das requisições, mas 
 </p>
 -- esp8266_estrutura.png
 
+As conexões são gerenciadas atraves das funções de callback realizadas de acordo com o tipo o evento socket `WStype_t`, em `WStype_DISCONNECTED`, `WStype_CONNECTED` e `WStype_TEXT`, sendo `WStype_DISCONNECTED` e `WStype_CONNECTED`, acionados quando recebemos uma nova quesição vinda da página web. 
 
--- Miro
+-- esp8266_socket_controller.png
+
+Quando temos um envio de evento vindo do usuario, atraves de `WStype_TEXT`, em que realizamos uma serie de procedimentos com a inteção de se inscrever no topico da requisição em busca da resposta   
+
+-- esp8266_messageOverMqtt.png
+
+Sendo basicamento o processamento padrão dos eventos recebidos, se analizarmos ocorre de forma semelhante a **CW-BFF-SERVICE**, em que temos um conjunto de funções de callback com a finalidade de reconhecer iterações com o úsuario, como sua solicitação de conexão e desconexão ao servidor WebSocket atraves da página Web, bem como os payloads enviados atraves das ações realizadas na página.
+
+
+# CardinalCloud: A construção da rede
+
+Nossa rede foi construida utilizando como base conexões Wi-Fi sob o protocolo 802.11g, embora possua a limitação de 54mBps, utilizado dessa forma por conta de ser um protocolo capaz de ser implementado em todos os dispositivos utilizados de forma convencional e pela grande base de documentações e configurações necessarias compativeis. Além da utilização deste protocolo realizamos a criação de servidores web 
+
 -----------------------------------------------------------
 
 
