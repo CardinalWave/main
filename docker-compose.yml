@@ -1,19 +1,4 @@
-
-version: '3.9'
-
 services:
- nginx:
-   image: nginx:latest
-   container_name: nginx
-   ports:
-     - "80:80"
-   volumes:
-     - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-   networks:
-     - cardinalCloud
-   depends_on:
-    - cw-bff-service
-
 
  mqtt-mosquitto:
   container_name: mqtt-mosquitto
@@ -54,7 +39,12 @@ services:
     - ./cw_message_db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
   ports:
     - "5431:5431"
- 
+
+ python-base-image:
+  container_name: python-base-image
+  build:
+   context: ./python-base-image
+
  cw-log-trace:
   container_name: cw-log-trace
   build:
@@ -76,6 +66,7 @@ services:
     - cw-log-trace
     - cw_central_db
     - cw-bff-service
+    - python-base-image
 
  cw-bff-service:
   container_name: cw-bff-service
@@ -88,6 +79,7 @@ services:
   depends_on:
     - cw-log-trace
     - mqtt-mosquitto
+    - python-base-image
 
  cw-message-service:
   container_name: cw-message-service
@@ -102,6 +94,7 @@ services:
    - mqtt-mosquitto
    - cw-mqtt-gateway
    - cw-bff-service
+   - python-base-image
 
  cw-mqtt-gateway:
   container_name: cw-mqtt-gateway
@@ -116,15 +109,29 @@ services:
     - cw-central-service
     - cw-log-trace
     - mqtt-mosquitto
+    - python-base-image
+  
+  cw-auth-service:
+    container_name: cw-auth-service
+    build:
+    context: ./cw-auth-service
+    networks:
+      - cardinalCloud
+    ports:
+      - "5050:5050"
+    depends_on:
+      - cw-bff-service
+      - cw-central-service
+      - python-base-image
 
 networks:
- cardinalCloud:
-  driver: bridge
-  ipam:
-   config:
-     - subnet: 172.28.1.0/24
+  cardinalCloud:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.1.0/24
 
 volumes:
   cw_central_db_data:
   cw_message_db_data:
-
+  db_data:

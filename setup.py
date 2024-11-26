@@ -5,16 +5,19 @@ import subprocess
 DOCKER_COMPOSE_FILE = 'docker-compose.yml'
 
 REPOSITORIES = [
-    {'url': 'git@github.com:CardinalWave/mqtt-mosquitto.git', 'branch': 'main'},
-    {'url': 'git@github.com:CardinalWave/nginx.git', 'branch': 'main'},
-    {'url': 'git@github.com:CardinalWave/cw_message_db.git', 'branch': 'main'},
-    {'url': 'git@github.com:CardinalWave/cw_central_db.git', 'branch': 'main'},
-    {'url': 'git@github.com:CardinalWave/cw-bff-service.git', 'branch': 'config_compose'},
-    {'url': 'git@github.com:CardinalWave/cw-log-trace.git', 'branch': 'config_compose'},
-    {'url': 'git@github.com:CardinalWave/cw-message-service.git', 'branch': 'config_compose'},
-    {'url': 'git@github.com:CardinalWave/cw-central-service.git', 'branch': 'config_compose'},
-    {'url': 'git@github.com:CardinalWave/cw-mqtt-gateway.git', 'branch': 'config_compose'},
-    {'url': 'git@github.com:CardinalWave/cw-auth-service.git', 'branch': 'main'},
+    {'url': 'https://github.com/CardinalWave/mqtt-mosquitto.git', 'branch': 'main'},
+    {'url': 'https://github.com/CardinalWave/nginx.git', 'branch': 'main'},
+    {'url': 'https://github.com/CardinalWave/cw_message_db.git', 'branch': 'server'},
+    {'url': 'https://github.com/CardinalWave/cw_central_db.git', 'branch': 'server'},
+    {'url': 'https://github.com/CardinalWave/cw-bff-service.git', 'branch': 'main'},
+    {'url': 'https://github.com/CardinalWave/cw-log-trace.git', 'branch': 'server'},
+    {'url': 'https://github.com/CardinalWave/cw-message-service.git', 'branch': 'server'},
+    {'url': 'https://github.com/CardinalWave/cw-central-service.git', 'branch': 'master'},
+    {'url': 'https://github.com/CardinalWave/cw-mqtt-gateway.git', 'branch': 'server'},
+    {'url': 'https://github.com/CardinalWave/cw-auth-service.git', 'branch': 'master'},
+    {'url': 'https://github.com/CardinalWave/python-base-image.git', 'branch': 'main'},
+    {'url': 'https://github.com/CardinalWave/keycloak.git', 'branch': 'main'},
+
  ]
 
 DEST_DIR = 'cardinal_wave'
