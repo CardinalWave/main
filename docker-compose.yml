@@ -113,6 +113,14 @@ services:
     - mqtt-mosquitto
     - python-base-image
 
+ keycloak:
+  container_name: keycloak
+  build:
+   context: ./keycloak
+  networks:
+    - cardinalCloud
+  ports:
+    - "5010:5010"
 
  cw-auth-service:
   container_name: cw-auth-service
@@ -121,11 +129,12 @@ services:
   networks:
     - cardinalCloud
   ports:
-    - "5050:5050"
+    - "5055:5055"
   depends_on:
     - cw-bff-service
     - cw-central-service
     - python-base-image
+    - keycloak
 
 networks:
   cardinalCloud:
