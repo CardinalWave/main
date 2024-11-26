@@ -49,15 +49,17 @@ services:
   container_name: cw-log-trace
   build:
    context: ./cw-log-trace
+  volumes:
+   - ./cw-log-trace/log_service.txt:/app/log_service.txt
   networks:
-    - cardinalCloud
+   - cardinalCloud
   ports:
-    - "5050:5050"
+   - "5050:5050"
 
  cw-central-service:
   container_name: cw-central-service
   build:
-   context: ./cw-central-service
+    context: ./cw-central-service
   networks:
     - cardinalCloud
   ports:
