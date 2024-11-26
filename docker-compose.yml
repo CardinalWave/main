@@ -110,6 +110,19 @@ services:
     - cw-log-trace
     - mqtt-mosquitto
     - python-base-image
+  
+  cw-auth-service:
+    container_name: cw-auth-service
+    build:
+    context: ./cw-auth-service
+    networks:
+      - cardinalCloud
+    ports:
+      - "5050:5050"
+    depends_on:
+      - cw-bff-service
+      - cw-central-service
+      - python-base-image
 
 networks:
   cardinalCloud:
